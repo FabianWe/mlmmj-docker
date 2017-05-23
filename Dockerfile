@@ -26,13 +26,15 @@ RUN chmod +x /mlmmj_listener.py
 COPY docker_entrypoint.sh /
 RUN chmod +x /docker_entrypoint.sh
 
+COPY renew_text.sh /
+RUN chmod +x /renew_text.sh
+
 RUN mkdir /mlmmj_conf/
 # RUN chown -R mlmmj:mlmmj /mlmmj_conf/
 # RUN chown -R mlmmj:mlmmj /var/spool/mlmmj
 
 WORKDIR /var/spool/mlmmj
-RUN rm -rf /mlmmj-$MLMMJ_VERSION.tar.bz2 /$MLMMJ_PREFIX$MLMMJ_VERSION
-RUN ls -l /
+RUN rm -rf /mlmmj-$MLMMJ_VERSION.tar.bz2
 
 ENTRYPOINT ["/docker_entrypoint.sh"]
 CMD ["/mlmmj_listener.py"]
