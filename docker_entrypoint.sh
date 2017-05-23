@@ -40,5 +40,8 @@ for listdir in `find /var/spool/mlmmj/ -name control -type d`; do
   printf "$POSTFIX_HOST\n" > "$listdir/relayhost"
 done)
 
+# start cron
+cron
+
 # start the server and wait for incoming mails...
 exec "$@"

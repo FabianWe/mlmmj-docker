@@ -1,0 +1,1 @@
+0 */2 * * * /usr/local/bin/mlmmj-maintd -F -d /var/spool/mlmmj

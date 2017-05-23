@@ -34,7 +34,12 @@ RUN mkdir /mlmmj_conf/
 # RUN chown -R mlmmj:mlmmj /var/spool/mlmmj
 
 WORKDIR /var/spool/mlmmj
-RUN rm -rf /mlmmj-$MLMMJ_VERSION.tar.bz2
+RUN rm -rf /mlmmj-$MLMMJ_VERSION.tar.bz2 /$MLMMJ_PREFIX$MLMMJ_VERSION
+
+# add crontab for mlmmj-maintd
+COPY crontab /etc/cron.d/mlmmj-maintd-cron
+RUN chmod 0644 /etc/cron.d/mlmmj-maintd-cron
+RUN /usr/bin/crontab /etc/cron.d/mlmmj-maintd-cron
 
 ENTRYPOINT ["/docker_entrypoint.sh"]
 CMD ["/mlmmj_listener.py"]
