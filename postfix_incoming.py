@@ -25,52 +25,58 @@
 # This script is used for accepting mails from postfix via a pipe transport.
 # Usually in mlmmj you invoke /usr/bin/mlmmj-recieve. But the mlmmj is in
 # another container. Therefore we invoke this file which sends the mail
-# to the host running mlmmj (and so to receive_listener.py).
+# to the host running mlmmj (and so to mlmmj_listener.py).
 
 import sys
 import os
 import requests
 import json
+import base64
+import argparse
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        print('Error processing incoming mail: nexthop not specified.')
-        print('Usage: %s <NEXTHOP>' % sys.argv[0])
-        print('This is probably a bug in the docker image - please report!')
-        sys.exit(1)
-    # read the mail from stdin
-    mail = sys.stdin.read()
-    # create a json object that we will send to our mlmmj listener
-    data = {'nexthop': sys.argv[1], 'mail': mail}
-    try:
-        # TODO host anpassen
+    parser = argparse.ArgumentParser(description='Script called by postfix and sends mail to an mlmmj listener (mlmmj_listener.py).')
+    parser.add_argument('nexthop', help='$nexthop from postfix')
+    parser.add_argument('--mlmmj', type=str, required=False, help='Host of the mlmmj listener (ip or hostname). Default is to use the MLMMJ_HOST env variable (or "mlmmj" if not set)')
+    parser.add_argument('--port', '-p', type=int, required=False, help='Port of the mlmmj listener. Default is to use the MLMMJ_PORT env variable (or 7777 if not set)')
+    parser.add_argument('--spool', '-s', type=str, required=False, default='/var/spool/mlmmj', help='Path of the mlmmj directory (default is "/var/spool/mlmmj")')
+    args = parser.parse_args()
+    if args.mlmmj is None:
         mlmmj_host = os.environ.get('MLMMJ_HOST', 'mlmmj')
-        mlmmj_port = int(os.environ.get('MLMMJ_PORT', 7777))
-    except ValueError as e:
-        print('MLMMJ_PORT must be an integer, error:', e)
-        sys.exit(1)
-    # try to send data
+    else:
+        mlmmj_host = args.mlmmj
+    if args.port is None:
+        try:
+            mlmmj_port = int(os.environ.get('MLMMJ_PORT', 7777))
+        except ValueError as e:
+            print('MLMMJ_PORT env variable must be an integer, errror:', e)
+            sys.exit(1)
+    else:
+        mlmmj_port = args.port
+    # after everything is ok we read the mail from stdin and encode it
+    bytes_mail = sys.stdin.buffer.read()
+    enc = base64.b64encode(bytes_mail).decode('utf-8')
+    # now we finally send the data
+    # we want some kind of timeout so we give the listener 5 minutes...
+    # should be more than enough
+    list_path = os.path.join(args.spool, args.nexthop)
+    args = ['-F', '-L', list_path]
+    data = {'mlmmj-command': 'mlmmj-receive', 'args': args, 'mail': enc}
     try:
-        # we give the other side 5 minutes... that should be plenty of time
-        # but we want some timeout
         response = requests.post('http://%s:%d' % (mlmmj_host, mlmmj_port),
-            json=data, headers={'host': 'localhost.mlmmj'},
-            timeout=600)
+        json=data, headers={'host': 'localhost.mlmmj'}, timeout=600)
     except requests.exceptions.RequestException as e:
-        # TODO does not work... if we don't send a response we somehow get this...
-        # not sure why
         print('Error while connecting to mlmmj listener:', e)
         sys.exit(1)
     except requests.exceptions.Timeout as timeoutErr:
         print('receive post timed out, maybe a bug in the image?')
         sys.exit(1)
-    # everything worked fine
-    # encode response
+    # everything worked fine... get response
     if response.status_code != 200:
         print('Got weird return value, probably a bug? The listener should always return 200 status code')
     text = response.text
+    # get json data
     try:
-        # we use the builtin json decoder, not the one from requests
         json_data = json.loads(text)
     except ValueError as e:
         print("Got a weird response, I don't know what happend to the mail, probably check /var/spool/mlmmj/%s/archive (can't parse json)" % sys.argv[1])
