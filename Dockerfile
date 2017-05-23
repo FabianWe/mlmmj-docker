@@ -6,7 +6,8 @@ RUN apt-get update && apt-get install -y cron curl tar bzip2 build-essential pyt
 ENV PYTHONUNBUFFERED 0
 
 # create a spool directory for mlmmj and add mlmmj user
-RUN groupadd mlmmj && useradd -g mlmmj mlmmj -d /var/spool/mlmmj -m && chown -R mlmmj.mlmmj /var/spool/mlmmj
+# RUN groupadd mlmmj && useradd -g mlmmj mlmmj -d /var/spool/mlmmj -m && chown -R mlmmj.mlmmj /var/spool/mlmmj
+# removed, we simply run as root... makes things easier...
 
 # set current mlmmj version
 ENV MLMMJ_VERSION 1.3.0a1
@@ -19,16 +20,19 @@ WORKDIR /$MLMMJ_PREFIX$MLMMJ_VERSION
 
 RUN ./configure && make && make install
 
-COPY receive_listener.py /
-RUN chmod +x /receive_listener.py
+COPY mlmmj_listener.py /
+RUN chmod +x /mlmmj_listener.py
 
 COPY docker_entrypoint.sh /
 RUN chmod +x /docker_entrypoint.sh
 
 RUN mkdir /mlmmj_conf/
-RUN chown -R mlmmj:mlmmj /mlmmj_conf/
-RUN chown -R mlmmj:mlmmj /var/spool/mlmmj
+# RUN chown -R mlmmj:mlmmj /mlmmj_conf/
+# RUN chown -R mlmmj:mlmmj /var/spool/mlmmj
+
+WORKDIR /var/spool/mlmmj
+RUN rm -rf /mlmmj-$MLMMJ_VERSION.tar.bz2 /$MLMMJ_PREFIX$MLMMJ_VERSION
+RUN ls -l /
 
 ENTRYPOINT ["/docker_entrypoint.sh"]
-# TODO fix permission stuff.
-CMD ["/receive_listener.py"]
+CMD ["/mlmmj_listener.py"]

@@ -26,22 +26,19 @@ fi
 
 if [ -z "$POSTFIX_HOST" ]; then
   POSTFIX_HOST="$(/sbin/ip route|awk '/default/ { print $3 }')"
+  printf "POSTFIX_HOST not specified, assuming that postfix is reachable on %s\n" "$POSTFIX_HOST"
 fi
-
 
 ln -sf /mlmmj_conf/virtual /var/spool/mlmmj/virtual && \
     ln -sf /mlmmj_conf/transport /var/spool/mlmmj/transport
 
 # we have to change the relayhost in each mailinglist s.t. mlmmj connects to
 # the postfix in the postfix container
-# TODO path is wrong?! should be control/relayhost?
 (IFS='
 '
 for listdir in `find /var/spool/mlmmj/ -name control -type d`; do
   printf "$POSTFIX_HOST\n" > "$listdir/relayhost"
 done)
-
-# TODO fix permissions here? not nice though...
 
 # start the server and wait for incoming mails...
 exec "$@"
