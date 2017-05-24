@@ -41,5 +41,7 @@ COPY crontab /etc/cron.d/mlmmj-maintd-cron
 RUN chmod 0644 /etc/cron.d/mlmmj-maintd-cron
 RUN /usr/bin/crontab /etc/cron.d/mlmmj-maintd-cron
 
+EXPOSE 7777
+
 ENTRYPOINT ["/docker_entrypoint.sh"]
 CMD ["/mlmmj_listener.py"]
