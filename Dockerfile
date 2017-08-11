@@ -10,7 +10,7 @@ ENV PYTHONUNBUFFERED 0
 # removed, we simply run as root... makes things easier...
 
 # set current mlmmj version
-ENV MLMMJ_VERSION 1.3.0a1
+ENV MLMMJ_VERSION 1.3.0
 ENV MLMMJ_PREFIX mlmmj-
 
 RUN curl -SLO "http://mlmmj.org/releases/mlmmj-$MLMMJ_VERSION.tar.bz2"

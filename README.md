@@ -12,7 +12,7 @@ This image installs mlmmj (built from source) and gives you an easy mailing list
 # How to use this Image
 I'll walk you through the process of how to get this image running. The idea was that mlmmj should be running in its own container s.t. postfix must not run in the container (wish would not be a good idea in terms of separation). I had the problem that my postfix does not (yet) run in docker but on the host. So I have not tested it with a postfix inside a docker container, but you should be able to extend and existing postfix image easily with this walkthrough s.t. it works with mlmmj. If you have any experience with that please let me know. I also intend to write my own postfix image and then will report my experience.
 
-One note first: The current version of mlmmj is 1.3.0a1 (May 2016). This is considered alpha but seems to work pretty nicely. There are also older versions available (different branches that correspond to the mlmmj versions). They're uploaded on duckerhub as well.
+One note first: The current version of mlmmj is 1.3.0 (May 2017). There are also older versions available (different branches that correspond to the mlmmj versions). They're uploaded on duckerhub as well.
 
 You must have a postfix running, either on your host machine or in another docker container. Usually mlmmj is added as a transport to postfix, so postfix runs the mlmmj-receive command. In the case the postfix runs in another container (or on your host) we can't execute this binary though. For this purpose I've written to python scripts that take care of this:
 
