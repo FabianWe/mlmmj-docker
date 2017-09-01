@@ -62,6 +62,22 @@ import argparse
 # the content in mlmmj-receive.
 # For all other commands an input is not possible at the moment, I think none
 # of the other mlmmj-... commands require it.
+#
+# An exception is the command mlmmj-make-ml. Until yet we can't create a ML
+# with mlmmj without user interaction.
+# But we want to do that, so there is the script mk_ml that uses expect to send
+# the values to mlmmj-make-ml.
+# Currently they seem to be working on it (September 2017), until it is fixed
+# and distributed with mlmmj there is this special handling with mk_ml.
+#
+# If the command is 'mlmmj-make-ml' the following options must be specified
+# (no others):
+# -L the name of the mailing list
+# -s The spool directory
+# -d The domain of the mailing list
+# -o The owner of the mailing list
+# -l The language of the mailing list
+# This is likely to change as mlmmj is under development!
 
 def call_cmd(args, input=None):
     byte_array = None
@@ -139,7 +155,15 @@ class MLMMJHandler(BaseHTTPRequestHandler):
                 input = None
         # if everything is ok this far we call the command and get the output
         if succ:
-            args = [os.path.join(executables, mlmmj_command)] + additional_args
+            # remove if once mlmmj-make-ml is fixed
+            if mlmmj_command == 'mlmmj-make-ml':
+                args = mlmmj_mk_ml_args(additional_args)
+                if args is None:
+                    mlmmj_resp = 'Invalid arguments for mlmmj-make-ml (fix)'
+                    succ = False
+            else:
+                args = [os.path.join(executables, mlmmj_command)] + additional_args
+        if succ:
             returncode, output = call_cmd(args, input)
             if returncode != 0:
                 mlmmj_resp = 'mlmmj instruction returned error: ' + output
@@ -159,6 +183,25 @@ executables = None
 allowed_commands = {'mlmmj-bounce', 'mlmmj-list',
     'mlmmj-maintd', 'mlmmj-make-ml', 'mlmmj-process', 'mlmmj-receive',
     'mlmmj-send', 'mlmmj-sub', 'mlmmj-unsub'}
+
+# remove once mlmmj-make-ml is fixed
+def mlmmj_mk_ml_args(args):
+    if len(args) % 2 != 0:
+        return None
+    arg_dict = dict()
+    i = 0
+    while i < len(args):
+        arg_dict[args[i]] = args[i+1]
+        i += 2
+    if '-L' not in arg_dict or '-d' not in arg_dict or '-o' not in arg_dict or '-l' not in arg_dict:
+        print("Received invalid arguments for mlmmj-make-ml. Arguments:", args)
+        return None
+    if '-s' not in arg_dict:
+        arg_dict['-s'] = '/var/spool/mlmmj'
+    script_args = ['/mk_ml']
+    mlmmj_cmd = os.path.join(executables, 'mlmmj-make-ml')
+    script_args.extend([mlmmj_cmd, arg_dict['-s'], arg_dict['-L'], arg_dict['-d'], arg_dict['-o'], arg_dict['-l']])
+    return script_args
 
 
 def main():

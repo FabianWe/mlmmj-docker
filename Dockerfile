@@ -1,7 +1,8 @@
 FROM ubuntu:16.04
 MAINTAINER Fabian Wenzelmann <fabianwen@posteo.eu>
 
-RUN apt-get update && apt-get install -y cron curl tar bzip2 build-essential python3
+# expect only required for the fix of mlmmj-make-ml
+RUN apt-get update && apt-get install -y cron curl tar bzip2 build-essential python3 expect
 
 ENV PYTHONUNBUFFERED 0
 
@@ -28,6 +29,9 @@ RUN chmod +x /docker_entrypoint.sh
 
 COPY renew_text.sh /
 RUN chmod +x /renew_text.sh
+
+COPY mk_ml /
+RUN chmod +x /mk_ml
 
 RUN mkdir /mlmmj_conf/
 # RUN chown -R mlmmj:mlmmj /mlmmj_conf/
